@@ -27,7 +27,19 @@ def index_articles():
 
 @app.route('/articles/<int:id>')
 def show_article(id):
-    pass
+    # Initialize the session counter on the first request for this browser.
+    page_views = session.get('page_views', 0)
+    session['page_views'] = page_views + 1
+
+    # Enforce the backend paywall after a user has viewed more than three articles.
+    if session['page_views'] > 3:
+        return {'message': 'Maximum pageview limit reached'}, 401
+
+    article = Article.query.filter_by(id=id).first()
+    if article is None:
+        return {'message': 'Article not found'}, 404
+
+    return make_response(ArticleSchema().dump(article))
 
 
 if __name__ == '__main__':
