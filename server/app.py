@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from flask import Flask, make_response, jsonify, session
+from flask import Flask, make_response, session
 from flask_migrate import Migrate
 
-from models import db, Article, User, ArticleSchema, UserSchema
+from models import db, Article, ArticleSchema
 
 app = Flask(__name__)
 app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
@@ -17,6 +17,7 @@ db.init_app(app)
 
 @app.route('/clear')
 def clear_session():
+    # Reset the per-browser session counter so a user can retry viewing articles.
     session['page_views'] = 0
     return {'message': '200: Successfully cleared session data.'}, 200
 
@@ -27,11 +28,12 @@ def index_articles():
 
 @app.route('/articles/<int:id>')
 def show_article(id):
-    # Initialize the session counter on the first request for this browser.
+    # Flask sessions persist per browser, so this tracks the user's article views
+    # on the server instead of trusting a client-side paywall.
     page_views = session.get('page_views', 0)
     session['page_views'] = page_views + 1
 
-    # Enforce the backend paywall after a user has viewed more than three articles.
+    # Allow up to three views before blocking access to further articles.
     if session['page_views'] > 3:
         return {'message': 'Maximum pageview limit reached'}, 401
 

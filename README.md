@@ -1,123 +1,90 @@
 # Cookies and Sessions Lab
 
-## Scenario
+A Flask API exercise that enforces a backend paywall using the browser session.
+Users can view up to three articles before the server rejects additional requests with a `401` response.
 
-In this lab, you'll be building out a blog paywall feature by using the session
-hash to keep track of how many page views a user has made.
+## Overview
 
-## Tools & Resources
+This app simulates a blog paywall that cannot be bypassed by editing frontend code in the browser. The backend stores a `page_views` counter in Flask's `session` object and blocks access once the user exceeds the limit.
 
-- [GitHub Repo](https://github.com/learn-co-curriculum/flask-cookies-and-sessions-lab)
-- [API - Flask: class flask.session](https://flask.palletsprojects.com/en/2.2.x/api/#flask.session)
+## Features
 
-## Set Up
+- article data API at `/articles/<int:id>`
+- per-browser page view tracking stored in the Flask session
+- paywall enforcement after three article views
+- `/clear` endpoint to reset the session counter during testing
 
-There is some starter code in place for a Flask API backend and a React
-frontend. To get set up, run:
+## Tech Stack
+
+- Flask 2.2.2
+- Flask-SQLAlchemy 3.0.3
+- Flask-Migrate 4.0.0
+- React frontend in the `client/` directory
+
+## Getting Started
+
+### 1. Install dependencies
 
 ```bash
-pipenv install && pipenv shell
+pipenv install
 npm install --prefix client
+```
+
+### 2. Set up the database and seed data
+
+```bash
 cd server
 flask db upgrade
 python seed.py
 ```
 
-You can work on this lab by running the tests with `pytest -x`. It will also be
-helpful to see what's happening during the request/response cycle by running the
-app in the browser. You can run the Flask server with:
+### 3. Run the backend
 
 ```bash
 python app.py
 ```
 
-Open a second terminal which will be responsible for running the React app:
+The API runs on `http://localhost:5555`.
+
+### 4. Run the frontend
+
+Open a second terminal:
 
 ```bash
 npm start --prefix client
 ```
 
-You don't have to make any changes to the React code to get this lab working.
+The frontend is configured to proxy to the Flask app on port `5555`.
 
-If you aren't currently running the Flask app, you may see:
+## Paywall Behavior
 
-```bash
-Proxy error: Could not proxy request /articles from localhost:4000 to http://localhost:5555.
+- On the first article request, the app initializes `session['page_views']` to `0`.
+- Each article request increments the counter by `1`.
+- Requests are allowed while the value is `3` or less.
+- Once the value is greater than `3`, the app returns:
+
+```json
+{"message": "Maximum pageview limit reached"}
 ```
 
-That's okay, that just means our Flask API isn't yet running, but the frontend is 
-trying to make a request.
+with a `401 Unauthorized` status.
 
-## Instructions
+## Resetting the Session
 
-### Task 1: Define the Problem
-
-Users are currently limited to seeing 3 articles on the site before hitting a 
-paywall, but the logic is only in the frontend, so many tech-savvy users are 
-getting around the paywall using browser dev tools.
-
-### Task 2: Determine the Design
-
-Our app will keep track of how many blog posts a user has viewed by using the
-`session` object. Each user can view a **maximum of three articles** before
-seeing the paywall. This will ensure the logic is on the backend and not as easy
-for users to get around.
-
-### Task 3: Develop, Test, and Refine the Code
-
-#### Step 1: Initialize the Session for Page Views
-
-When a user makes a `GET` request to `/articles/<int:id>`:
-
-- If this is the first request this user has made, set `session['page_views']` to
-  an initial value of 0.
-
-#### Step 2: Increment the Session on Each Request
-
-For every request to `/articles/<int:id>`, increment the value of 
-`session['page_views']` by 1.
-
-#### Step 3: Send Response Based on Session Data
-
-- If the user has viewed 3 or fewer pages, render a JSON response with the
-  article data.
-- If the user has viewed more than 3 pages, render a JSON response including an
-  error message `{'message': 'Maximum pageview limit reached'}`, and a status code
-  of 401 unauthorized.
-
-#### Step 4: Test the Endpoint
-
-- In browser, navigate to your React app.
-- Click on 4 articles. The first 3 should be visible. The last article should say
-"Maximum articles viewed"
-- An API endpoint at `/clear` is available to clear your session as needed. Navigate
-to http://localhost:5555/clear to reset attempts.
-- Run test suite with `pytest` to ensure all tests are passing.
-  
-#### Step 5: Commit and Push Git History
-
-* Commit and push your code:
+Use the helper route below to clear the counter while testing:
 
 ```bash
-git add .
-git commit -m "final solution"
-git push
+http://localhost:5555/clear
 ```
 
-* If you created a separate feature branch, remember to open a PR on main and merge.
+## Testing
 
-### Task 4: Document and Maintain
+From the project root:
 
-Best Practice documentation steps:
-* Add comments to the code to explain purpose and logic, clarifying intent and functionality of your code to other developers.
-* Update README text to reflect the functionality of the application following https://makeareadme.com. 
-  * Add screenshot of completed work included in Markdown in README.
-* Delete any stale branches on GitHub
-* Remove unnecessary/commented out code
-* If needed, update git ignore to remove sensitive data
+```bash
+pytest
+```
 
-## Submit your solution
+## Notes
 
-CodeGrade will use the same test suite as the test suite included.
-
-Once all tests are passing, commit and push your work using `git` to submit to CodeGrade through Canvas.
+This project keeps the paywall logic on the backend so the frontend cannot be manipulated by altering browser state or devtools.
